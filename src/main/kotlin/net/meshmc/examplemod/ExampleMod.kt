@@ -3,7 +3,7 @@ package net.meshmc.examplemod
 import dev.tigr.simpleevents.listener.EventHandler
 import dev.tigr.simpleevents.listener.EventListener
 import net.meshmc.mesh.Mesh
-import net.meshmc.mesh.event.events.render.HudRenderEvent
+import net.meshmc.mesh.event.events.render.RenderEvent
 import net.meshmc.mesh.util.render.Color
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -22,7 +22,7 @@ class ExampleMod: Mesh.Initializer {
     }
 
     @field:EventHandler
-    val hudRenderEventListener = EventListener<HudRenderEvent> {
+    val hudRenderEventListener = EventListener<RenderEvent.Hud> {
         // draw text to the hud using minecraft's font renderer
         MESH.minecraft.textRenderer.drawText("Hello ${MESH.minecraft.session.username}", 0F, 0F, Color.WHITE)
     }
