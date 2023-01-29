@@ -1,44 +1,67 @@
 plugins {
-    id "java"
-    id "org.jetbrains.kotlin.jvm" version "$kotlinVersion"
+    id("org.jetbrains.kotlin.jvm") version "$kotlinVersion" apply false
 }
 
-group "net.meshmc"
-version "1.0-SNAPSHOT"
+allprojects {
+    apply plugin: "java"
+    apply plugin: "org.jetbrains.kotlin.jvm"
+}
 
-repositories {
-    mavenCentral()
-    maven {
-        name = "MeshMC"
-        url = "https://maven.meshmc.net"
+group = project.mavenGroup
+version = project.modVersion
+archivesBaseName = project.modid
+
+subprojects {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "MeshMC"
+            url = "https://maven.meshmc.net"
+        }
+        maven {
+            name = "Fabric"
+            url = "https://maven.fabricmc.net/"
+        }
     }
+
+    dependencies {
+        implementation "net.meshmc:mesh-loader:$loaderVersion"
+
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
+        implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$coroutinesVersion"
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:$serializationVersion"
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$serializationVersion"
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-cbor-jvm:$serializationVersion"
+    }
+}
+
+configurations {
+    embeddedLibs
+    embeddedJars
 }
 
 dependencies {
-    implementation "net.meshmc:mesh-core:1.0-SNAPSHOT"
-    implementation "dev.tigr:simpleevents:1.3"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
-    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$coroutinesVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:$serializationVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$serializationVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-cbor-jvm:$serializationVersion"
-    implementation "org.apache.logging.log4j:log4j-api:2.17.0"
-    implementation "com.google.guava:guava:31.0.1-jre"
+    embeddedLibs(project(":core")) {
+        transitive = false
+    }
+
+    subprojects.forEach {
+        if(it.name.matches("v[0-9]+_[0-9]+_([0-9]+|x)")) embeddedJars(it) {
+            transitive = false
+        }
+    }
 }
 
-processResources {
-    inputs.property "version", project.version
-
-    from(sourceSets.main.resources.srcDirs) {
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-        expand "version": project.version
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
+jar {
+    from {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        configurations.embeddedLibs.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
     }
+    from(configurations.embeddedJars)
 }
